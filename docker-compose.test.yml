@@ -1,0 +1,77 @@
+# Docker Compose - TEST/STAGING Environment
+# Test environment with separate database and relaxed security for debugging
+
+services:
+  # PostgreSQL Database - Test
+  postgres_test:
+    image: postgres:15-alpine
+    container_name: qiwi_postgres_test
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qiwi_gateway_test
+      POSTGRES_USER: ${POSTGRES_TEST_USER:-qiwi_test_user}
+      POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:-test_password_123}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+    networks:
+      - qiwi_network_test
+    ports:
+      - "127.0.0.1:5434:5432"  # Different port for test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_TEST_USER:-qiwi_test_user} -d qiwi_gateway_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # API Application - Test
+  api_test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDCONFIG: Debug
+    image: qiwigateway:test
+    container_name: qiwi_api_test
+    restart: unless-stopped
+    depends_on:
+      postgres_test:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Test
+      ASPNETCORE_URLS: http://+:5001
+      ConnectionStrings__DefaultConnection: "Host=postgres_test;Port=5432;Database=qiwi_gateway_test;Username=${POSTGRES_TEST_USER:-qiwi_test_user};Password=${POSTGRES_TEST_PASSWORD:-test_password_123}"
+      TZ: Europe/Istanbul
+      Logging__LogLevel__Default: Debug
+      Logging__LogLevel__Microsoft: Information
+    volumes:
+      - ./logs-test:/app/Logs
+      - ./data-test:/app/Data
+    networks:
+      - qiwi_network_test
+    ports:
+      - "5001:5001"  # Different port for test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+networks:
+  qiwi_network_test:
+    driver: bridge
+
+volumes:
+  postgres_data_test:
+    driver: local

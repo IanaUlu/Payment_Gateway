@@ -3,6 +3,24 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Environment files - NEVER commit sensitive data!
+.env.production
+.env.test
+.env
+
+# Logs
+logs/
+logs-test/
+*.log
+
+# Backups
+backups/*.sql
+backups/*.sql.gz
+
+# SSL Certificates
+nginx/ssl/*.pem
+nginx/ssl/*.key
+
 # User-specific files
 *.rsuser
 *.suo
