@@ -1,0 +1,59 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: qiwi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qiwi_gateway
+      POSTGRES_USER: bePay_user
+      POSTGRES_PASSWORD: G7x!r9Qv2@secure
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # Changed external port to 5433 to avoid conflict with local PostgreSQL
+    networks:
+      - qiwi_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bePay_user -d qiwi_gateway"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # QiwiGateway API
+  qiwi_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qiwi_api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=qiwi_gateway;Username=bePay_user;Password=G7x!r9Qv2@secure;Timeout=30;CommandTimeout=30;
+      - TZ=Asia/Tbilisi
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - qiwi_network
+    volumes:
+      - ./logs:/app/Logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  qiwi_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

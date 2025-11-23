@@ -1,0 +1,22 @@
+﻿name: Test Self-Hosted Runner
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: self-hosted
+
+    steps:
+      - name: Проверка раннера
+        run: echo "✅ Runner работает на ${{ runner.os }}"
+
+      - name: Получение кода
+        uses: actions/checkout@v4
+
+      - name: Восстановление зависимостей
+        run: dotnet restore QiwiGateway.Api/QiwiGateway.Api.csproj
+
+      - name: Сборка API проекта
+        run: dotnet build QiwiGateway.Api/QiwiGateway.Api.csproj --configuration Release

@@ -1,0 +1,16 @@
+**/.dockerignore
+**/.git
+**/.gitignore
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/*.user
+**/node_modules
+**/TestResults
+**/Logs
+**/.vs
+**/.idea
+*.md
+LICENSE
+.editorconfig
