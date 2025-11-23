@@ -284,20 +284,30 @@ This project is provided as-is for educational and development purposes.
 
 ## Disclaimer
 
-⚠️ **Important:** This is a demonstration payment gateway. For production use:
+⚠️ **CRITICAL SECURITY WARNING:** This is a demonstration payment gateway for educational purposes only.
 
-1. Replace default API keys with strong, random keys
-2. Implement proper SSL/TLS encryption
-3. Add comprehensive logging and monitoring
-4. Implement rate limiting
-5. Add fraud detection
-6. Connect to real payment processors (Stripe, PayPal, etc.)
-7. Comply with PCI DSS standards
-8. Implement proper error handling and recovery
-9. Add database backups and disaster recovery
-10. Conduct security audits
+**DO NOT USE IN PRODUCTION** without addressing these critical security issues:
 
-Never use this in production without proper security hardening and compliance measures.
+### PCI DSS Compliance Issues:
+1. **CVV Storage**: This demo stores CVV codes, which violates PCI DSS. CVV must NEVER be stored.
+2. **Card Data**: Card numbers are stored unencrypted. In production, use tokenization or encryption.
+3. **No Real Payment Processing**: This doesn't connect to actual payment processors.
+
+### Required for Production:
+1. Remove CVV storage entirely
+2. Implement card tokenization (use services like Stripe, PayPal, or Braintree)
+3. Replace default API keys with strong, random keys
+4. Implement proper SSL/TLS encryption (HTTPS only)
+5. Add comprehensive logging and monitoring
+6. Implement rate limiting and DDoS protection
+7. Add fraud detection systems
+8. Follow PCI DSS compliance requirements
+9. Implement proper error handling and recovery
+10. Add database encryption and backups
+11. Conduct regular security audits
+12. Use a production WSGI server (not Flask dev server)
+
+**This code is for learning purposes only. Using it in production could expose you to data breaches, legal liability, and regulatory penalties.**
 
 ## Support
 

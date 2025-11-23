@@ -74,7 +74,16 @@ class TransactionDatabase:
         conn.close()
     
     def save_transaction(self, transaction):
-        """Save a transaction to the database."""
+        """
+        Save a transaction to the database.
+        
+        WARNING: This is a demonstration implementation only.
+        In production, you MUST:
+        1. NEVER store CVV codes (PCI DSS requirement)
+        2. Encrypt or tokenize card numbers before storage
+        3. Use a payment processor that handles card data
+        4. Follow PCI DSS compliance standards
+        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('''
@@ -86,8 +95,8 @@ class TransactionDatabase:
             transaction.transaction_id,
             transaction.amount,
             transaction.currency,
-            transaction.card_number,
-            transaction.cvv,
+            transaction.card_number,  # WARNING: Should be encrypted/tokenized in production
+            transaction.cvv,  # WARNING: Should NEVER be stored in production
             transaction.expiry_date,
             transaction.cardholder_name,
             transaction.description,

@@ -21,7 +21,6 @@ class Config:
     
     # Security settings
     REQUIRE_API_KEY = os.getenv('REQUIRE_API_KEY', 'True').lower() == 'true'
-    ENABLE_ENCRYPTION = os.getenv('ENABLE_ENCRYPTION', 'True').lower() == 'true'
     
     # Server settings
     HOST = os.getenv('HOST', '0.0.0.0')
