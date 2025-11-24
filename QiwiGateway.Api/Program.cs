@@ -93,8 +93,8 @@ using (var scope = app.Services.CreateScope())
     {
         logger.LogInformation("Applying database migrations...");
         
-        // Ensure database is created
-        db.Database.EnsureCreated();
+        // Apply EF Core migrations
+        db.Database.Migrate();
         
         logger.LogInformation("Database migrations applied successfully");
         
