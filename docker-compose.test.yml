@@ -17,7 +17,7 @@ services:
     networks:
       - qiwi_network_test
     ports:
-      - "0.0.0.1:5001:5001"  # Different port for test
+      - "0.0.0.0:5001:5001"  # Different port for test
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_TEST_USER:-qiwi_test_user} -d qiwi_gateway_test"]
       interval: 10s
