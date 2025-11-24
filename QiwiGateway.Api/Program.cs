@@ -21,8 +21,10 @@ builder.Services.AddDbContext<QiwiDbContext>(options =>
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(CreateTransactionCommand).Assembly));
 
-// URL configuration
-builder.WebHost.UseUrls("http://0.0.0.0:5000");
+// URL configuration - use ASPNETCORE_URLS environment variable or default to 5000
+// This allows flexibility for different environments (Test: 5001, Production: 5000)
+var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://0.0.0.0:5000";
+builder.WebHost.UseUrls(urls);
 
 // Controllers + XML support
 builder.Services.AddControllers()
