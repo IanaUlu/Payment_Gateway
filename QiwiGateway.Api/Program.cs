@@ -93,6 +93,21 @@ using (var scope = app.Services.CreateScope())
     {
         logger.LogInformation("Applying database migrations...");
         
+        // Check if database was created with EnsureCreated (no migrations table)
+        // If so, delete and recreate with proper migrations
+        var canConnect = db.Database.CanConnect();
+        if (canConnect)
+        {
+            var hasMigrationsTable = db.Database.ExecuteSqlRaw(
+                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '__EFMigrationsHistory')") == 1;
+            
+            if (!hasMigrationsTable)
+            {
+                logger.LogWarning("Database exists but has no migrations history. Dropping and recreating with migrations...");
+                db.Database.EnsureDeleted();
+            }
+        }
+        
         // Apply EF Core migrations
         db.Database.Migrate();
         
@@ -102,6 +117,21 @@ using (var scope = app.Services.CreateScope())
         if (app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
         {
             DbInitializer.Seed(db);
+        }
+    }
+    catch (Npgsql.PostgresException pex) when (pex.SqlState == "42P07") // relation already exists
+    {
+        logger.LogWarning(pex, "Database schema conflict detected. Dropping database and recreating with migrations...");
+        try
+        {
+            db.Database.EnsureDeleted();
+            db.Database.Migrate();
+            logger.LogInformation("Database recreated successfully");
+        }
+        catch (Exception innerEx)
+        {
+            logger.LogError(innerEx, "Failed to recreate database");
+            throw;
         }
     }
     catch (Exception ex)

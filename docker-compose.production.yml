@@ -18,7 +18,7 @@ services:
     networks:
       - qiwi_network_prod
     ports:
-      - "127.0.0.1:5433:5432"  # Bind to localhost only for security
+      - "0.0.0.1:5000:5000"  # Bind to localhost only for security
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-qiwi_prod_user} -d qiwi_gateway_prod"]
       interval: 10s

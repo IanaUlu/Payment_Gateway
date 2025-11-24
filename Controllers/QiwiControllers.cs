@@ -47,9 +47,9 @@ public class QiwiController : ControllerBase
 
         var parameters = new Dictionary<string, string>
     {
-        { "txn_id", txnId },
+        { "txn_id", txnId ?? ""},
         { "account", account },
-        { "sum", sum },
+        { "sum", sum ?? ""},
         { "prv_id", prvId.ToString() },
         { "pay_type", payType ?? "" },
         { "txn_date", txnDate ?? "" },

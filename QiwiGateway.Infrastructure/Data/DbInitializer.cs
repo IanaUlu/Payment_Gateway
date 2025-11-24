@@ -31,6 +31,7 @@ public static class DbInitializer
                 AccountNumber = "79001234567",
                 Amount = 100.50m,
                 Status = "pending",
+                OsmpCode = "0",  // Success code
                 CreatedAt = DateTime.UtcNow
             });
         }
