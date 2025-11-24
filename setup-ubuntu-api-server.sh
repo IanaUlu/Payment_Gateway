@@ -75,7 +75,23 @@ read -p "Enter Domain Name (optional, press Enter to skip): " DOMAIN_NAME
 read -p "Enter Email for SSL (optional, press Enter to skip): " SSL_EMAIL
 
 echo ""
+echo -e "${YELLOW}Select Environment:${NC}"
+echo "  1) Production (Swagger OFF, Warning logs, Rate limiting ON)"
+echo "  2) Test (Swagger ON, Debug logs, Rate limiting OFF)"
+read -p "Enter choice (1 or 2): " ENV_CHOICE
+
+if [ "$ENV_CHOICE" = "2" ]; then
+    ASPNET_ENV="Test"
+    API_PORT=5001
+else
+    ASPNET_ENV="Production"
+    API_PORT=5000
+fi
+
+echo ""
 echo -e "${GREEN}Configuration Summary:${NC}"
+echo "  Environment: $ASPNET_ENV"
+echo "  API Port: $API_PORT"
 echo "  Database Server IP: $DB_SERVER_IP"
 echo "  Database Name: $DB_NAME_LOWER"
 echo "  Database User: $DB_USER"
@@ -198,9 +214,9 @@ POSTGRES_USER=$DB_USER
 POSTGRES_PASSWORD=$DB_PASSWORD
 
 # Application Settings
-ASPNETCORE_ENVIRONMENT=Production
+ASPNETCORE_ENVIRONMENT=$ASPNET_ENV
 TZ=Europe/Istanbul
-API_PORT=5000
+API_PORT=$API_PORT
 
 # Security
 JWT_SECRET=$(openssl rand -base64 32)
@@ -231,8 +247,8 @@ services:
       args:
         BUILDCONFIG: Release
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: http://+:5000
+      ASPNETCORE_ENVIRONMENT: $ASPNET_ENV
+      ASPNETCORE_URLS: http://+:$API_PORT
       ConnectionStrings__DefaultConnection: "Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SSL Mode=Require;Trust Server Certificate=true"
       TZ: ${TZ}
     volumes:
@@ -241,9 +257,9 @@ services:
     networks:
       - qiwi_network
     ports:
-      - "127.0.0.1:5000:5000"
+      - "127.0.0.1:$API_PORT:$API_PORT"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:$API_PORT/health"]
       interval: 30s
       timeout: 10s
       retries: 3
