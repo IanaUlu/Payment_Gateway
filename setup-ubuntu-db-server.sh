@@ -30,25 +30,72 @@ echo "Hostname: $(hostname)"
 echo "Private IP: $(hostname -I | awk '{print $1}')"
 echo ""
 
-# Ask for configuration
-read -p "Enter API Server Private IP (to whitelist, e.g., 10.0.0.1): " API_SERVER_IP
-read -p "Enter Database Name (default: qiwi_gateway_prod): " DB_NAME
-DB_NAME=${DB_NAME:-qiwi_gateway_prod}
-read -p "Enter Database User (default: qiwi_prod_user): " DB_USER
-DB_USER=${DB_USER:-qiwi_prod_user}
-read -sp "Enter Database Password (STRONG password!): " DB_PASSWORD
+# Ask for configuration BEFORE any installation
+echo -e "${BLUE}================================================${NC}"
+echo -e "${BLUE}  DATABASE CONFIGURATION${NC}"
+echo -e "${BLUE}================================================${NC}"
 echo ""
+
+read -p "Enter API Server Private IP (to whitelist): " API_SERVER_IP
+while [ -z "$API_SERVER_IP" ]; do
+    echo -e "${RED}API Server IP cannot be empty!${NC}"
+    read -p "Enter API Server Private IP: " API_SERVER_IP
+done
+
+read -p "Enter Database Name (e.g., payment_gateway_prod): " DB_NAME
+while [ -z "$DB_NAME" ]; do
+    echo -e "${RED}Database name cannot be empty!${NC}"
+    read -p "Enter Database Name: " DB_NAME
+done
+
+read -p "Enter Database User (e.g., pgadmin): " DB_USER
+while [ -z "$DB_USER" ]; do
+    echo -e "${RED}Database user cannot be empty!${NC}"
+    read -p "Enter Database User: " DB_USER
+done
+
+while true; do
+    read -sp "Enter Database Password (min 12 chars): " DB_PASSWORD
+    echo ""
+    if [ ${#DB_PASSWORD} -lt 12 ]; then
+        echo -e "${RED}Password must be at least 12 characters!${NC}"
+    else
+        read -sp "Confirm Database Password: " DB_PASSWORD_CONFIRM
+        echo ""
+        if [ "$DB_PASSWORD" = "$DB_PASSWORD_CONFIRM" ]; then
+            break
+        else
+            echo -e "${RED}Passwords do not match!${NC}"
+        fi
+    fi
+done
+
 read -p "Enter Backup Retention Days (default: 30): " BACKUP_DAYS
 BACKUP_DAYS=${BACKUP_DAYS:-30}
 
 echo ""
+echo -e "${GREEN}Configuration Summary:${NC}"
+echo "  API Server IP: $API_SERVER_IP"
+echo "  Database Name: $DB_NAME"
+echo "  Database User: $DB_USER"
+echo "  Backup Retention: $BACKUP_DAYS days"
+echo ""
+read -p "Continue with installation? (y/n): " CONFIRM
+if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+    echo -e "${RED}Installation cancelled.${NC}"
+    exit 1
+fi
+
+echo ""
 echo -e "${YELLOW}📦 Step 1: System Update${NC}"
+export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get upgrade -y
+apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 echo -e "${GREEN}✓ System updated${NC}"
 
 echo ""
 echo -e "${YELLOW}📦 Step 2: Installing Required Packages${NC}"
+export DEBIAN_FRONTEND=noninteractive
 apt-get install -y \
     wget \
     ca-certificates \
@@ -63,6 +110,9 @@ echo -e "${GREEN}✓ Required packages installed${NC}"
 
 echo ""
 echo -e "${YELLOW}🗄️  Step 3: Installing PostgreSQL 15${NC}"
+
+# Disable interactive prompts for PostgreSQL
+export DEBIAN_FRONTEND=noninteractive
 
 # Add PostgreSQL repository
 sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
