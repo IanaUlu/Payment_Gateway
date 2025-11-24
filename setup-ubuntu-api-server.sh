@@ -357,24 +357,24 @@ http {
 NGINXEOF
 
 # Create default site config
-cat > nginx/conf.d/default.conf << 'NGINXCONF'
+cat > nginx/conf.d/default.conf << NGINXCONF
 # HTTP Server
 server {
     listen 80 default_server;
     server_name _;
 
     location /health {
-        proxy_pass http://api:5000/health;
+        proxy_pass http://api:$API_PORT/health;
         access_log off;
     }
 
     location / {
-        proxy_pass http://api:5000;
+        proxy_pass http://api:$API_PORT;
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
         
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
