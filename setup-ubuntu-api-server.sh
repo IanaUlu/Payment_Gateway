@@ -229,6 +229,10 @@ EOF
 
 chmod 600 .env.production
 
+# Also create .env file for docker-compose
+cp .env.production .env
+chmod 600 .env
+
 echo -e "${GREEN}✓ Environment file created${NC}"
 
 # Create docker-compose.production-remote-db.yml
@@ -247,19 +251,19 @@ services:
       args:
         BUILDCONFIG: Release
     environment:
-      ASPNETCORE_ENVIRONMENT: $ASPNET_ENV
-      ASPNETCORE_URLS: http://+:$API_PORT
-      ConnectionStrings__DefaultConnection: "Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SSL Mode=Require;Trust Server Certificate=true"
-      TZ: ${TZ}
+      ASPNETCORE_ENVIRONMENT: \${ASPNET_ENV}
+      ASPNETCORE_URLS: http://+:\${API_PORT}
+      ConnectionStrings__DefaultConnection: "Host=\${POSTGRES_HOST};Port=\${POSTGRES_PORT};Database=\${POSTGRES_DB};Username=\${POSTGRES_USER};Password=\${POSTGRES_PASSWORD};SSL Mode=Require;Trust Server Certificate=true"
+      TZ: \${TZ}
     volumes:
       - ./logs:/app/Logs
       - ./data:/app/Data
     networks:
       - qiwi_network
     ports:
-      - "127.0.0.1:$API_PORT:$API_PORT"
+      - "127.0.0.1:\${API_PORT}:\${API_PORT}"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:$API_PORT/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:\${API_PORT}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
