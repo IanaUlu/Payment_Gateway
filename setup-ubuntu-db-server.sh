@@ -132,26 +132,35 @@ echo -e "${YELLOW}🔧 Step 4: Configuring PostgreSQL${NC}"
 systemctl start postgresql
 systemctl enable postgresql
 
+# Convert DB_NAME to lowercase for PostgreSQL
+DB_NAME_LOWER=$(echo "$DB_NAME" | tr '[:upper:]' '[:lower:]')
+
 # Create database and user
 sudo -u postgres psql << PSQLEOF
 -- Create user
 CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';
 
--- Create database
-CREATE DATABASE $DB_NAME OWNER $DB_USER;
+-- Create database (PostgreSQL converts to lowercase automatically)
+CREATE DATABASE "$DB_NAME_LOWER" OWNER $DB_USER;
 
 -- Grant privileges
-GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;
-
--- Allow user to create tables
-\c $DB_NAME
-GRANT ALL ON SCHEMA public TO $DB_USER;
-GRANT CREATE ON SCHEMA public TO $DB_USER;
+GRANT ALL PRIVILEGES ON DATABASE "$DB_NAME_LOWER" TO $DB_USER;
 
 \q
 PSQLEOF
 
-echo -e "${GREEN}✓ Database and user created${NC}"
+# Connect to database and grant schema permissions
+sudo -u postgres psql -d "$DB_NAME_LOWER" << PSQLEOF2
+-- Allow user to create tables
+GRANT ALL ON SCHEMA public TO $DB_USER;
+GRANT CREATE ON SCHEMA public TO $DB_USER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO $DB_USER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO $DB_USER;
+
+\q
+PSQLEOF2
+
+echo -e "${GREEN}✓ Database '$DB_NAME_LOWER' and user '$DB_USER' created${NC}"
 
 echo ""
 echo -e "${YELLOW}🔐 Step 5: Configuring PostgreSQL Security${NC}"
@@ -207,7 +216,7 @@ local   all             postgres                                peer
 local   all             all                                     peer
 
 # Allow API server to connect with SSL
-hostssl $DB_NAME        $DB_USER        $API_SERVER_IP/32       scram-sha-256
+hostssl $DB_NAME_LOWER  $DB_USER        $API_SERVER_IP/32       scram-sha-256
 
 # Allow localhost connections
 host    all             all             127.0.0.1/32            scram-sha-256
@@ -264,14 +273,14 @@ cat > /usr/local/bin/pg-backup.sh << 'BACKUPEOF'
 # PostgreSQL Automated Backup Script
 
 BACKUP_DIR="/var/backups/postgresql"
-DB_NAME="$DB_NAME"
+DB_NAME="$DB_NAME_LOWER"
 DB_USER="$DB_USER"
 RETENTION_DAYS="$BACKUP_DAYS"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/${DB_NAME}_${TIMESTAMP}.sql.gz"
 
 # Create backup
-sudo -u postgres pg_dump $DB_NAME | gzip > $BACKUP_FILE
+sudo -u postgres pg_dump "$DB_NAME" | gzip > $BACKUP_FILE
 
 # Check if backup was successful
 if [ $? -eq 0 ]; then
@@ -287,7 +296,7 @@ fi
 BACKUPEOF
 
 # Replace variables in backup script
-sed -i "s/\$DB_NAME/$DB_NAME/g" /usr/local/bin/pg-backup.sh
+sed -i "s/\$DB_NAME/$DB_NAME_LOWER/g" /usr/local/bin/pg-backup.sh
 sed -i "s/\$DB_USER/$DB_USER/g" /usr/local/bin/pg-backup.sh
 sed -i "s/\$BACKUP_DAYS/$BACKUP_DAYS/g" /usr/local/bin/pg-backup.sh
 
@@ -307,9 +316,9 @@ echo ""
 echo -e "${YELLOW}📊 Step 9: Testing Database Connection${NC}"
 
 # Test connection
-if sudo -u postgres psql -d $DB_NAME -c "SELECT version();" > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ Database connection successful${NC}"
-    sudo -u postgres psql -d $DB_NAME -c "SELECT version();"
+if sudo -u postgres psql -d "$DB_NAME_LOWER" -c "SELECT version();" > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ Database connection test successful${NC}"
+    sudo -u postgres psql -d "$DB_NAME_LOWER" -c "SELECT version();"
 else
     echo -e "${RED}❌ Database connection failed${NC}"
 fi
@@ -317,7 +326,7 @@ fi
 echo ""
 echo -e "${YELLOW}🔍 Step 10: Database Statistics${NC}"
 
-sudo -u postgres psql -d $DB_NAME << 'STATSEOF'
+sudo -u postgres psql -d "$DB_NAME_LOWER" << 'STATSEOF'
 -- Database size
 SELECT pg_size_pretty(pg_database_size(current_database())) as database_size;
 
@@ -331,7 +340,7 @@ echo "  ✅ DATABASE SERVER SETUP COMPLETE!"
 echo "==========================================${NC}"
 echo ""
 echo -e "${BLUE}📊 Database Information:${NC}"
-echo "  Database Name: $DB_NAME"
+echo "  Database Name: $DB_NAME_LOWER"
 echo "  Database User: $DB_USER"
 echo "  PostgreSQL Version: 15"
 echo "  Listening Port: 5432"
@@ -345,10 +354,10 @@ echo "  ✓ Password authentication (scram-sha-256)"
 echo "  ✓ All other connections rejected"
 echo ""
 echo -e "${BLUE}📋 Connection String for API Server:${NC}"
-echo "  Host=$(hostname -I | awk '{print $1}');Port=5432;Database=$DB_NAME;Username=$DB_USER;Password=$DB_PASSWORD;SSL Mode=Require;Trust Server Certificate=true"
+echo "  Host=$(hostname -I | awk '{print $1}');Port=5432;Database=$DB_NAME_LOWER;Username=$DB_USER;Password=$DB_PASSWORD;SSL Mode=Require;Trust Server Certificate=true"
 echo ""
 echo -e "${BLUE}📋 Useful Commands:${NC}"
-echo "  Connect to DB:        sudo -u postgres psql -d $DB_NAME"
+echo "  Connect to DB:        sudo -u postgres psql -d \"$DB_NAME_LOWER\""
 echo "  View connections:     sudo -u postgres psql -c \"SELECT * FROM pg_stat_activity;\""
 echo "  Check logs:           tail -f /var/log/postgresql/postgresql-*.log"
 echo "  Manual backup:        /usr/local/bin/pg-backup.sh"
