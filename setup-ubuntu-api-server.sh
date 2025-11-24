@@ -250,10 +250,12 @@ services:
       dockerfile: Dockerfile
       args:
         BUILDCONFIG: Release
+    env_file:
+      - .env
     environment:
       ASPNETCORE_ENVIRONMENT: \${ASPNET_ENV}
-      ASPNETCORE_URLS: http://+:\${API_PORT}
-      ConnectionStrings__DefaultConnection: "Host=\${POSTGRES_HOST};Port=\${POSTGRES_PORT};Database=\${POSTGRES_DB};Username=\${POSTGRES_USER};Password=\${POSTGRES_PASSWORD};SSL Mode=Require;Trust Server Certificate=true"
+      ASPNETCORE_URLS: 'http://+:\${API_PORT}'
+      ConnectionStrings__DefaultConnection: 'Host=\${POSTGRES_HOST};Port=\${POSTGRES_PORT};Database=\${POSTGRES_DB};Username=\${POSTGRES_USER};Password=\${POSTGRES_PASSWORD};SSL Mode=Require;Trust Server Certificate=true'
       TZ: \${TZ}
     volumes:
       - ./logs:/app/Logs
@@ -261,9 +263,9 @@ services:
     networks:
       - qiwi_network
     ports:
-      - "127.0.0.1:\${API_PORT}:\${API_PORT}"
+      - '127.0.0.1:\${API_PORT}:\${API_PORT}'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:\${API_PORT}/health"]
+      test: ["CMD", "curl", "-f", 'http://localhost:\${API_PORT}/health']
       interval: 30s
       timeout: 10s
       retries: 3
